@@ -20,7 +20,7 @@ model: Optional[AutoModelForCausalLM] = None
 
 
 def initialize_LLM_model(
-        model_name: str = "mistralai/Mixtral-8x7B-Instruct-v0.1"):
+        model_name: str = "mistralai/Mistral-7B-v0.1"):
     """
     IInitializes and loads the tokenizer and the model into memory.
 
