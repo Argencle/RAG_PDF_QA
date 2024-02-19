@@ -1,7 +1,6 @@
 import streamlit as st
 from src.utils import (
     prepare_data_for_mistral,
-    initialize_LLM_model,
     get_answer
     )
 
@@ -12,7 +11,6 @@ documents, nodes, collection = prepare_data_for_mistral(
     use_dir=True
     )
 
-initialize_LLM_model()
 
 section_key = "RAG_PDFs_data"
 if f"messages_{section_key}" not in st.session_state:

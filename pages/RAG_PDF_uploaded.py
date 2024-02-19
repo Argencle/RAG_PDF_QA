@@ -3,7 +3,6 @@ from src.utils import (
     upload_pdf,
     display_pdf,
     prepare_data_for_mistral,
-    initialize_LLM_model,
     get_answer
     )
 
@@ -17,7 +16,6 @@ with col2:
     uploaded_file = upload_pdf()
 
 if uploaded_file is not None:
-    initialize_LLM_model()
     with col1:
         documents, nodes, collection = prepare_data_for_mistral(
             uploaded_file=uploaded_file
