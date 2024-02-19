@@ -159,7 +159,7 @@ def get_summary(
     try:
         assert tokenizer is not None and model is not None
 
-        inputs = tokenizer(messages, return_tensors="pt").to(0)
+        inputs = tokenizer(messages[0].content, return_tensors="pt").to(0)
         if torch.cuda.is_available():
             inputs = inputs.to("cuda")
 
