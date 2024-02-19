@@ -16,11 +16,11 @@ with col2:
 
 if uploaded_file is not None:
     with col1:
-        documents, nodes, collection, model, client = prepare_data_for_mistral(
+        documents, nodes, collection = prepare_data_for_mistral(
             uploaded_file=uploaded_file,
             include_collection=False
             )
-        resume = get_summary(documents, client, model)
+        resume = get_summary(documents)
         st.markdown(resume)
     with col2:
         display_pdf(uploaded_file)

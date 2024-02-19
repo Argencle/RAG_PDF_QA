@@ -8,13 +8,31 @@ from pypdf import PdfReader
 from typing import List, Tuple, Optional, Match
 from io import BytesIO
 import base64
-from dotenv import load_dotenv
-import os
 from mistralai.models.chat_completion import ChatMessage
-from mistralai.client import MistralClient
-from mistralai.exceptions import MistralAPIException
 from src.prompts import PROMPTS
 import re
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
+
+
+tokenizer: Optional[AutoTokenizer] = None
+model: Optional[AutoModelForCausalLM] = None
+
+
+def initialize_LLM_model(
+        model_name: str = "mistralai/Mixtral-8x7B-Instruct-v0.1"):
+    """
+    IInitializes and loads the tokenizer and the model into memory.
+
+    Args:
+        model_name (str): The name of the model on Hugging Face.
+    """
+    global tokenizer, model
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True)
+
+    if torch.cuda.is_available():
+        model.to("cuda")
 
 
 def prepare_data_for_mistral(
@@ -24,12 +42,10 @@ def prepare_data_for_mistral(
         ) -> Tuple[
             List[Document],
             Optional[List[BaseNode]],
-            Optional[Collection],
-            str,
-            MistralClient
+            Optional[Collection]
             ]:
     """
-    This unified method aims to prepare data to send it to the Mistral API
+    This unified method aims to prepare data to send it to the Mistral LLM
     """
     if use_dir:
         documents = load_dir()
@@ -43,9 +59,7 @@ def prepare_data_for_mistral(
         nodes = parse_PDF(documents)
         collection = vectorDB(nodes)
 
-    model, client = Mistral_API()
-
-    return documents, nodes, collection, model, client
+    return documents, nodes, collection
 
 
 def upload_pdf() -> Optional[BytesIO]:
@@ -128,26 +142,9 @@ def vectorDB(nodes: List[BaseNode]) -> Collection:
         raise
 
 
-@st.cache_resource()
-def Mistral_API() -> Tuple[str, MistralClient]:
-    """Connect to the Mistral API"""
-    load_dotenv()
-    api_key = os.getenv("API_KEY")
-    if not api_key:
-        raise ValueError("API key for Mistral is missing")
-    model = "mistral-tiny"
-    try:
-        client = MistralClient(api_key=api_key)
-        return model, client
-    except Exception as e:
-        st.error(f"Failed to initialize Mistral Client: {str(e)}")
-        raise
-
-
 def get_summary(
-        docs: List,
-        client: MistralClient,
-        model: str) -> str:
+        docs: List
+        ) -> str:
     """Receive the PDF uploaded and make a summary"""
     messages = [
         ChatMessage(
@@ -160,24 +157,24 @@ def get_summary(
             )
             ]
     try:
-        chat_response = client.chat(model=model, messages=messages)
-        return chat_response.choices[0].message.content
-    except MistralAPIException as e:
-        if e.http_status == 400:
-            st.error("File too big for the Mistral context window 32k tokens."
-                     "Please try with a smaller file.")
-            return ""
-        else:
-            error_message = f"An error occurred: {e.message}"
-            st.error(error_message)
-            return ""
+        assert tokenizer is not None and model is not None
+
+        inputs = tokenizer(messages, return_tensors="pt").to(0)
+        if torch.cuda.is_available():
+            inputs = inputs.to("cuda")
+
+        outputs = model.generate(**inputs)
+        answer = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        return answer
+
+    except Exception as e:
+        st.error(f"Failed to get answer: {str(e)}")
+        raise
 
 
 def get_answer(
         question_input: str,
         collection: Collection,
-        model: str,
-        client: MistralClient,
         prompt_key: str) -> str:
     """
     Question answering function based on Retrieved information (chunk of PDF)
@@ -210,9 +207,15 @@ def get_answer(
                 page_number=page_number
                 )
 
-            messages = [ChatMessage(role="user", content=prompt)]
-            chat_response = client.chat(model=model, messages=messages)
-            answer = chat_response.choices[0].message.content
+            assert tokenizer is not None and model is not None
+
+            inputs = tokenizer(prompt, return_tensors="pt").to(0)
+            if torch.cuda.is_available():
+                inputs = inputs.to("cuda")
+
+            outputs = model.generate(**inputs)
+            answer = tokenizer.decode(outputs[0], skip_special_tokens=True)
+
         else:
             answer = ""
         return answer

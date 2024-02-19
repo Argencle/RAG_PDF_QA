@@ -3,6 +3,7 @@ from src.utils import (
     upload_pdf,
     display_pdf,
     prepare_data_for_mistral,
+    initialize_LLM_model,
     get_answer
     )
 
@@ -16,8 +17,9 @@ with col2:
     uploaded_file = upload_pdf()
 
 if uploaded_file is not None:
+    initialize_LLM_model()
     with col1:
-        documents, nodes, collection, model, client = prepare_data_for_mistral(
+        documents, nodes, collection = prepare_data_for_mistral(
             uploaded_file=uploaded_file
             )
 
@@ -36,8 +38,6 @@ if uploaded_file is not None:
                     chat_response = get_answer(
                         question_input,
                         collection,
-                        model,
-                        client,
                         prompt_key="RAG_PDF"
                         )
                     st.session_state[f"messages_{section_key}"].append(

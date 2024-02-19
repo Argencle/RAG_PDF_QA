@@ -1,5 +1,7 @@
 # Mistral API 
 mistralai==0.0.11
+torch==2.2.0
+transformers==4.37.2
 
 # Vector Database
 chromadb==0.4.22
