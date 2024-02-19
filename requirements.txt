@@ -2,6 +2,8 @@
 mistralai==0.0.11
 torch==2.2.0
 transformers==4.37.2
+bitsandbytes==0.42.0
+accelerate==0.27.2
 
 # Vector Database
 chromadb==0.4.22
