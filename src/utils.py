@@ -20,7 +20,7 @@ model: Optional[AutoModelForCausalLM] = None
 
 
 def initialize_LLM_model(
-        model_name: str = "mistralai/Mistral-7B-v0.1"):
+        model_name: str = "mistralai/Mistral-7B-Instruct-v0.1"):
     """
     IInitializes and loads the tokenizer and the model into memory.
 
@@ -30,9 +30,6 @@ def initialize_LLM_model(
     global tokenizer, model
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True)
-
-    if torch.cuda.is_available():
-        model.to("cuda")
 
 
 def prepare_data_for_mistral(
