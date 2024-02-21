@@ -8,7 +8,6 @@ from pypdf import PdfReader
 from typing import List, Tuple, Optional, Match
 from io import BytesIO
 import base64
-from mistralai.models.chat_completion import ChatMessage
 from src.prompts import PROMPTS
 import re
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -144,25 +143,28 @@ def get_summary(
         ) -> str:
     """Receive the PDF uploaded and make a summary"""
     messages = [
-        ChatMessage(
-            role="user",
-            content=f"Make a summary written in the third person plural 'they'"
-            f"of the following scientific paper PDF:"
-            f"{docs[0].text} and write it in the following form: the title,"
-            f"the authors, an abstract, the main contributionn,"
-            f"the key findings, and a conclusion."
-            )
+        {
+            "role": "user", "content": f"You are a helpful bot who reads"
+            f" scientific paper and Make a summary written in the third person"
+            f" plural, and write it in the following form: the title, the"
+            f" authors, an abstract, the main contribution,"
+            f" the key findings, and a conclusion. Here is the paper:"
+            f" {docs[0].text}"}
             ]
     try:
         assert tokenizer is not None and model is not None
 
-        inputs = tokenizer(messages[0].content, return_tensors="pt").to(0)
+        inputs = tokenizer.apply_chat_template(messages, return_tensors="pt")
         if torch.cuda.is_available():
             inputs = inputs.to("cuda")
 
-        outputs = model.generate(**inputs)
-        answer = tokenizer.decode(outputs[0], skip_special_tokens=True)
-        return answer
+        outputs = model.generate(inputs, max_new_tokens=1024)
+        decoded_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        if "[/INST]" in decoded_output:
+            generated_response = decoded_output.split("[/INST]", 1)[-1].strip()
+        else:
+            generated_response = decoded_output
+        return generated_response
 
     except Exception as e:
         st.error(f"Failed to get answer: {str(e)}")
@@ -204,14 +206,30 @@ def get_answer(
                 page_number=page_number
                 )
 
+            messages = [
+                {
+                    "role": "user", "content": prompt}
+                ]
             assert tokenizer is not None and model is not None
 
-            inputs = tokenizer(prompt, return_tensors="pt").to(0)
+            inputs = tokenizer.apply_chat_template(
+                messages,
+                return_tensors="pt"
+                )
             if torch.cuda.is_available():
                 inputs = inputs.to("cuda")
 
-            outputs = model.generate(**inputs)
-            answer = tokenizer.decode(outputs[0], skip_special_tokens=True)
+            outputs = model.generate(inputs, max_new_tokens=1024)
+            decoded_output = tokenizer.decode(
+                outputs[0],
+                skip_special_tokens=True
+                )
+            if "[/INST]" in decoded_output:
+                generated_response = (decoded_output.split
+                                      ("[/INST]", 1)[-1].strip())
+            else:
+                generated_response = decoded_output
+            return generated_response
 
         else:
             answer = ""
