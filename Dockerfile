@@ -3,8 +3,11 @@ FROM python:3.10.11
 
 WORKDIR /app
 
-COPY . .
+# install dependencies beforehand (caching)
+COPY ./requirements.txt /app
 RUN pip install -r requirements.txt
+
+COPY . /app
 
 # Expose the port on which Streamlit will run
 EXPOSE 8501
