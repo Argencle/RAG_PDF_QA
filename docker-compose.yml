@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  app:
+    image: test_rag
+    build: .
+    command: streamlit run main.py --server.port=8501 --server.address=0.0.0.0
+    volumes:
+      - .:/app # Current folder in the contener Workdir's
+    ports:
+      - "8501:8501"
