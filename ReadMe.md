@@ -50,9 +50,9 @@ This will generate an interface for asking questions and reading answers from th
 
 ### *Note running on AWS ECS with AWS ECR
 #### Setup for ECR
-- First, build a docker image with the `Dockerfile`
+- First, build a docker image with the `Dockerfile` and `docker-compise.yml` files which will recreate the image automatically for each modification in the workdir folder. 
 ```sh
-docker build -t image_name .
+docker-compose up --build
 ```
 
 - Install [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
@@ -124,6 +124,31 @@ lt --port 8501 (enter your IP address as tunnel password) (creates a secure tunn
 ```
 
 *Note that the link of the streamlit application can be shared to anyone !
+
+### Running on EC2 instance with SSH
+
+- Launch an EC2 instance with a key .pem 
+
+- Connect with SSH and the key file
+```sh
+ssh -i your_file.pem ec2-user@....
+```
+
+- Install sudo, git, clone, python3
+```sh
+sudo yum update
+sudo yum install git -y
+git clone -b Local_LLM_with_AWS "https://github.com/Argencle/RAG_PDF_QA.git"
+sudo yum install python3 -y
+python3 -m ensurepip --upgrade
+pip3 install -r requirements.txt
+nohup streamlit run main.py &
+curl -sL https://rpm.nodesource.com/setup_21.x | sudo bash -
+sudo yum install -y nodejs
+sudo npm install -g localtunnel
+curl https://ipv4.icanhazip.com
+lt --port 8501
+```
 
 ## To add
 To deal with bigger files:
